@@ -95,7 +95,7 @@ export default function ContactUs({ onClose }: Props) {
 
           {/* Email */}
           <a
-            href="mailto:Belllistings@maskanihub.com"
+            href="mailto:Belllistings@maskanihub.biz"
             className="flex items-center gap-5 p-5 rounded-2xl transition-all"
             style={{ background: "#F7F5F1", border: "1px solid #E8E0D5" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#C8891A"; (e.currentTarget as HTMLElement).style.background = "#FFF8EE" }}
@@ -111,7 +111,7 @@ export default function ContactUs({ onClose }: Props) {
             </div>
             <div className="flex-1">
               <div style={{ fontSize: "0.75rem", color: "#9CA3AF", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.06em" }}>Email</div>
-              <div style={{ fontSize: "1rem", fontWeight: 700, color: "#C8891A" }}>Belllistings@maskanihub.com</div>
+              <div style={{ fontSize: "1rem", fontWeight: 700, color: "#C8891A" }}>Belllistings@maskanihub.biz</div>
               <div style={{ fontSize: "0.8rem", color: "#6B7280", marginTop: 2 }}>We reply within 24 hours</div>
             </div>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C8891A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
@@ -150,7 +150,7 @@ export default function ContactUs({ onClose }: Props) {
               </div>
             </div>
             <a
-              href="mailto:Belllistings@maskanihub.com?subject=List My Property on Maskani Hub"
+              href="mailto:Belllistings@maskanihub.biz?subject=List My Property on Maskani Hub"
               className="flex-shrink-0 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
               style={{ background: "#C8891A", color: "#fff" }}
             >

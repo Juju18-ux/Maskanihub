@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle } from "react-leaflet"
 import L from "leaflet"
 import type { Property } from "../data/properties"
 import Gallery from "./Gallery"
+import MortgageCalculator from "./MortgageCalculator"
 import "leaflet/dist/leaflet.css"
 
 // Fix leaflet default marker icons in Vite
@@ -51,6 +52,7 @@ export default function PropertyModal({ property: p, onClose }: Props) {
   const [viewingStep, setViewingStep] = useState<ViewingStep>("idle")
   const [viewingName, setViewingName] = useState("")
   const [viewingPhone, setViewingPhone] = useState("")
+  const [showFinance, setShowFinance] = useState(false)
   // Deterministic "others interested" count per property
   const othersCount = 3 + (p.id % 9)
   const images = p.images && p.images.length > 0 ? p.images : [p.img]
@@ -473,6 +475,15 @@ export default function PropertyModal({ property: p, onClose }: Props) {
                 </svg>
                 Request Viewing
               </button>
+              {(p.listingType === "sale" || p.listingType === "both") && p.salePriceKES && (
+                <button
+                  onClick={() => setShowFinance(true)}
+                  className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2"
+                  style={{ background: "linear-gradient(135deg, #0F2419, #1B5E35)", color: "#fff" }}
+                >
+                  🏦 Get Financing
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -657,6 +668,14 @@ export default function PropertyModal({ property: p, onClose }: Props) {
         </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
+    )}
+
+    {showFinance && (
+      <MortgageCalculator
+        onClose={() => setShowFinance(false)}
+        prefillPrice={p.salePriceKES}
+        prefillEstate={p.estate}
+      />
     )}
     </>
   )

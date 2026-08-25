@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useTheme } from "../context/ThemeContext"
+import AuthModal from "./AuthModal"
 import { PROPERTIES, CITIES, type Property } from "../data/properties"
 import PropertyModal from "./PropertyModal"
 import Chatbot from "./Chatbot"
 import ContactUs from "./ContactUs"
 import OurStory from "./OurStory"
 import MarketData from "./MarketData"
+import MortgageCalculator from "./MortgageCalculator"
 
 type ListingFilter = "All" | "rent" | "sale"
 
@@ -52,16 +55,16 @@ function PropertyCard({ p, onOpen }: { p: Property; onOpen: (p: Property) => voi
       onClick={() => onOpen(p)}
       className="group flex flex-col rounded-2xl overflow-hidden cursor-pointer transition-all duration-300"
       style={{
-        background: "#FFFFFF",
-        border: "1px solid #E8E0D5",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border)",
+        boxShadow: "var(--card-shadow)",
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 28px rgba(0,0,0,0.12)"
+        (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow-hover)"
         ;(e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)"
+        (e.currentTarget as HTMLElement).style.boxShadow = "var(--card-shadow)"
         ;(e.currentTarget as HTMLElement).style.transform = "translateY(0)"
       }}
     >
@@ -144,16 +147,16 @@ function PropertyCard({ p, onOpen }: { p: Property; onOpen: (p: Property) => voi
       {/* Body */}
       <div className="flex flex-col gap-3 p-4 flex-1">
         <div>
-          <div style={{ fontWeight: 600, color: "#1A1A1A", fontSize: "0.95rem", fontFamily: "Outfit, sans-serif", lineHeight: 1.3 }}>
+          <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: "0.95rem", fontFamily: "Outfit, sans-serif", lineHeight: 1.3 }}>
             {p.area}
-            <span style={{ fontWeight: 400, color: "#9CA3AF" }}> · {p.city}</span>
+            <span style={{ fontWeight: 400, color: "var(--text-faint)" }}> · {p.city}</span>
           </div>
-          <div style={{ fontSize: "0.78rem", color: "#6B7280", marginTop: 2 }}>{p.estate}</div>
-          <div style={{ fontSize: "0.78rem", color: "#9CA3AF", marginTop: 1 }}>{p.type}</div>
+          <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: 2 }}>{p.estate}</div>
+          <div style={{ fontSize: "0.78rem", color: "var(--text-faint)", marginTop: 1 }}>{p.type}</div>
         </div>
 
         {/* Specs row */}
-        <div className="flex items-center gap-4 text-xs" style={{ color: "#6B7280" }}>
+        <div className="flex items-center gap-4 text-xs" style={{ color: "var(--text-muted)" }}>
           <span className="flex items-center gap-1.5">
             <BedIcon />
             {p.beds === 0 ? "Studio" : `${p.beds} Bed${p.beds > 1 ? "s" : ""}`}
@@ -171,20 +174,20 @@ function PropertyCard({ p, onOpen }: { p: Property; onOpen: (p: Property) => voi
             <span
               key={a}
               className="px-2 py-0.5 rounded-md text-[10px]"
-              style={{ background: "#FBF0EC", color: "#B84520" }}
+              style={{ background: "var(--bg-active)", color: "#B84520" }}
             >
               {a}
             </span>
           ))}
           {p.amenities.length > 3 && (
-            <span className="px-2 py-0.5 rounded-md text-[10px]" style={{ background: "#F3F4F6", color: "#9CA3AF" }}>
+            <span className="px-2 py-0.5 rounded-md text-[10px]" style={{ background: "var(--bg-surface-2)", color: "var(--text-faint)" }}>
               +{p.amenities.length - 3}
             </span>
           )}
         </div>
 
         {/* Proximity highlights */}
-        <div className="text-xs" style={{ color: "#9CA3AF" }}>
+        <div className="text-xs" style={{ color: "var(--text-faint)" }}>
           {p.nearbySchools[0] && (
             <span>🏫 {p.nearbySchools[0].name} ({p.nearbySchools[0].distance})</span>
           )}
@@ -193,10 +196,10 @@ function PropertyCard({ p, onOpen }: { p: Property; onOpen: (p: Property) => voi
         {/* Footer */}
         <div
           className="mt-auto pt-3 flex items-center justify-between"
-          style={{ borderTop: "1px solid #F3F4F6" }}
+          style={{ borderTop: "1px solid var(--border-subtle)" }}
         >
           <div>
-            <span style={{ fontSize: "0.72rem", color: "#9CA3AF" }}>Reply </span>
+            <span style={{ fontSize: "0.72rem", color: "var(--text-faint)" }}>Reply </span>
             <span style={{ fontSize: "0.72rem", color: "#B84520", fontWeight: 600 }}>{p.replyTime}</span>
             {p.petFriendly && <span className="ml-2 text-xs">🐾</span>}
           </div>
@@ -264,12 +267,28 @@ function applyFilters(props: Property[], f: Filters): Property[] {
 }
 
 export default function MainApp() {
+  const { dark, toggle: toggleTheme } = useTheme()
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
   const [selectedProp, setSelectedProp] = useState<Property | null>(null)
   const [visible, setVisible] = useState(false)
   const [showContact, setShowContact] = useState(false)
   const [showStory, setShowStory] = useState(false)
   const [showMarket, setShowMarket] = useState(false)
+  const [showMortgage, setShowMortgage] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
+  const [user, setUser] = useState<{ name: string; email: string; avatar?: string } | null>(null)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close user menu on outside click
+  useEffect(() => {
+    if (!showUserMenu) return
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setShowUserMenu(false)
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [showUserMenu])
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80)
@@ -285,7 +304,7 @@ export default function MainApp() {
     <div
       className="w-full h-screen scroll-container"
       style={{
-        background: "#F7F5F1",
+        background: "var(--bg-page)",
         opacity: visible ? 1 : 0,
         transition: "opacity 0.7s ease",
         fontFamily: "Outfit, sans-serif",
@@ -296,42 +315,49 @@ export default function MainApp() {
         className="sticky top-0 z-30 flex items-center justify-between px-6 md:px-10"
         style={{
           height: 62,
-          background: "#FFFFFF",
-          borderBottom: "1px solid #E8E0D5",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+          background: "var(--bg-nav)",
+          borderBottom: "1px solid var(--border)",
+          boxShadow: "var(--nav-shadow)",
         }}
       >
         <div style={{ fontFamily: "Fraunces, serif", fontSize: "1.2rem", color: "#B84520", fontWeight: 400, letterSpacing: "0.01em" }}>
           Maskani<span style={{ color: "#C8891A" }}>Hub</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-8 text-sm" style={{ color: "#6B7280" }}>
-          <a href="#" className="hover:text-gray-900 transition-colors">Listings</a>
-          <button
-            onClick={() => setShowMarket(true)}
-            className="hover:text-gray-900 transition-colors"
-          >
+        <div className="hidden md:flex items-center gap-8 text-sm" style={{ color: "var(--text-muted)" }}>
+          <a href="#" style={{ color: "var(--text-muted)" }} className="hover:opacity-80 transition-opacity">Listings</a>
+          <button onClick={() => setShowMarket(true)} style={{ color: "var(--text-muted)" }} className="hover:opacity-80 transition-opacity">
             Market Data
           </button>
-          <button
-            onClick={() => setShowStory(true)}
-            className="hover:text-gray-900 transition-colors"
-          >
+          <button onClick={() => setShowMortgage(true)} style={{ color: "var(--text-muted)" }} className="hover:opacity-80 transition-opacity flex items-center gap-1">
+            <span style={{ fontSize: "0.8rem" }}>🏦</span> Finance
+          </button>
+          <button onClick={() => setShowStory(true)} style={{ color: "var(--text-muted)" }} className="hover:opacity-80 transition-opacity">
             Our Story
           </button>
-          <button
-            onClick={() => setShowContact(true)}
-            className="hover:text-gray-900 transition-colors font-medium"
-            style={{ color: "#B84520" }}
-          >
+          <button onClick={() => setShowContact(true)} className="hover:opacity-80 transition-opacity font-medium" style={{ color: "#B84520" }}>
             Contact Us
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+            style={{ background: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", border: "1px solid var(--border)", color: "var(--text-muted)" }}
+            title={dark ? "Light mode" : "Dark mode"}
+          >
+            {dark ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-12.37l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0zM7.05 18.36l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0z"/></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+            )}
+          </button>
+
           <button
             onClick={() => setShowContact(true)}
-            className="hidden md:flex items-center gap-1.5 text-sm font-medium transition-colors"
+            className="hidden md:flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-80"
             style={{ color: "#C8891A" }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -339,6 +365,74 @@ export default function MainApp() {
             </svg>
             +254 757 660 878
           </button>
+
+          {/* Auth: Sign In button OR user avatar */}
+          {user ? (
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setShowUserMenu((v) => !v)}
+                className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl transition-all"
+                style={{ background: dark ? "#1A1A1A" : "#F7F5F1", border: "1px solid var(--border)" }}
+              >
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-lg object-cover" />
+                ) : (
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: "#B84520", color: "#fff" }}>
+                    {user.name[0].toUpperCase()}
+                  </div>
+                )}
+                <span className="hidden md:block text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                  {user.name.split(" ")[0]}
+                </span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: "var(--text-muted)" }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+
+              {showUserMenu && (
+                <div
+                  className="absolute right-0 top-full mt-2 rounded-2xl overflow-hidden shadow-2xl z-50"
+                  style={{ width: 220, background: dark ? "#111" : "#fff", border: "1px solid var(--border)" }}
+                >
+                  <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)" }}>{user.name}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: 1 }}>{user.email}</div>
+                  </div>
+                  {[
+                    { icon: "🏡", label: "Saved listings" },
+                    { icon: "🔔", label: "My alerts" },
+                    { icon: "📋", label: "Viewing requests" },
+                  ].map((item) => (
+                    <button key={item.label} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-all hover:opacity-80" style={{ color: "var(--text-secondary)" }}>
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                  <div style={{ borderTop: "1px solid var(--border)" }}>
+                    <button
+                      onClick={() => { setUser(null); setShowUserMenu(false) }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left"
+                      style={{ color: "#B84520" }}
+                    >
+                      <span>→</span> Sign out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAuth(true)}
+              className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: "var(--bg-surface-2)", color: "var(--text-primary)", border: "1px solid var(--border)" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ color: "var(--text-muted)" }}>
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+              </svg>
+              Sign In
+            </button>
+          )}
+
           <button
             onClick={() => setShowContact(true)}
             className="px-4 py-2 rounded-xl text-sm font-semibold"
@@ -388,13 +482,13 @@ export default function MainApp() {
           <div
             className="mt-7 flex items-center"
             style={{
-              background: "#fff",
+              background: "var(--bg-card)",
               borderRadius: 999,
               padding: "10px 12px 10px 18px",
               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
             }}
           >
-            <span style={{ color: "#9CA3AF", marginRight: 10 }}>
+            <span style={{ color: "var(--text-faint)", marginRight: 10 }}>
               <SearchIcon />
             </span>
             <input
@@ -403,10 +497,10 @@ export default function MainApp() {
               onChange={(e) => setFilter("search", e.target.value)}
               placeholder="Search area, estate, or type…"
               className="flex-1 bg-transparent text-sm outline-none"
-              style={{ color: "#1A1A1A" }}
+              style={{ color: "var(--text-primary)" }}
             />
             {filters.search && (
-              <button onClick={() => setFilter("search", "")} style={{ color: "#9CA3AF", marginRight: 8 }}>✕</button>
+              <button onClick={() => setFilter("search", "")} style={{ color: "var(--text-faint)", marginRight: 8 }}>✕</button>
             )}
             <button
               className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-semibold"
@@ -459,12 +553,12 @@ export default function MainApp() {
         {/* Sidebar filters */}
         <aside
           className="hidden lg:flex flex-col gap-5 flex-shrink-0 p-6"
-          style={{ width: 240, paddingTop: 28 }}
+          style={{ width: 240, paddingTop: 28, borderRight: "1px solid var(--border)" }}
         >
           {/* Listing type toggle */}
           <div>
-            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#9CA3AF" }}>Listing Type</div>
-            <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid #E8E0D5" }}>
+            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--text-faint)" }}>Listing Type</div>
+            <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
               {(["All", "rent", "sale"] as const).map((lt) => (
                 <button
                   key={lt}
@@ -472,7 +566,7 @@ export default function MainApp() {
                   className="flex-1 py-2 text-xs font-semibold transition-all"
                   style={{
                     background: filters.listingType === lt ? "#B84520" : "transparent",
-                    color: filters.listingType === lt ? "#fff" : "#6B7280",
+                    color: filters.listingType === lt ? "#fff" : "var(--text-muted)",
                   }}
                 >
                   {lt === "All" ? "All" : lt === "rent" ? "Rent" : "Buy"}
@@ -481,10 +575,10 @@ export default function MainApp() {
             </div>
           </div>
 
-          <div style={{ height: 1, background: "#E8E0D5" }} />
+          <div style={{ height: 1, background: "var(--border)" }} />
 
           <div>
-            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#9CA3AF" }}>City</div>
+            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--text-faint)" }}>City</div>
             <div className="flex flex-col gap-1">
               {CITIES.map((c) => (
                 <button
@@ -492,12 +586,12 @@ export default function MainApp() {
                   onClick={() => setFilter("city", c)}
                   className="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-left transition-all"
                   style={{
-                    background: filters.city === c ? "#FBF0EC" : "transparent",
-                    color: filters.city === c ? "#B84520" : "#4B5563",
+                    background: filters.city === c ? "var(--bg-active)" : "transparent",
+                    color: filters.city === c ? "#B84520" : "var(--text-secondary)",
                   }}
                 >
                   <span>{c}</span>
-                  <span style={{ fontSize: "0.72rem", color: "#9CA3AF" }}>
+                  <span style={{ fontSize: "0.72rem", color: "var(--text-faint)" }}>
                     {c === "All" ? PROPERTIES.length : PROPERTIES.filter((p) => p.city === c).length}
                   </span>
                 </button>
@@ -505,10 +599,10 @@ export default function MainApp() {
             </div>
           </div>
 
-          <div style={{ height: 1, background: "#E8E0D5" }} />
+          <div style={{ height: 1, background: "var(--border)" }} />
 
           <div>
-            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#9CA3AF" }}>Tier</div>
+            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--text-faint)" }}>Tier</div>
             <div className="flex flex-col gap-1">
               {(["All", "budget", "middle", "premium"] as const).map((t) => (
                 <button
@@ -516,8 +610,8 @@ export default function MainApp() {
                   onClick={() => setFilter("tier", t)}
                   className="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-left transition-all"
                   style={{
-                    background: filters.tier === t ? "#FBF0EC" : "transparent",
-                    color: filters.tier === t ? "#B84520" : "#4B5563",
+                    background: filters.tier === t ? "var(--bg-active)" : "transparent",
+                    color: filters.tier === t ? "#B84520" : "var(--text-secondary)",
                   }}
                 >
                   <span>{t === "All" ? "All Tiers" : TIER_LABEL[t]}</span>
@@ -526,10 +620,10 @@ export default function MainApp() {
             </div>
           </div>
 
-          <div style={{ height: 1, background: "#E8E0D5" }} />
+          <div style={{ height: 1, background: "var(--border)" }} />
 
           <div>
-            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#9CA3AF" }}>Bedrooms</div>
+            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--text-faint)" }}>Bedrooms</div>
             <div className="flex flex-wrap gap-2">
               {[null, 0, 1, 2, 3, 4].map((b) => (
                 <button
@@ -537,8 +631,8 @@ export default function MainApp() {
                   onClick={() => setFilter("minBeds", b)}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                   style={{
-                    background: filters.minBeds === b ? "#B84520" : "#F3F4F6",
-                    color: filters.minBeds === b ? "#fff" : "#4B5563",
+                    background: filters.minBeds === b ? "#B84520" : "var(--bg-surface-2)",
+                    color: filters.minBeds === b ? "#fff" : "var(--text-secondary)",
                   }}
                 >
                   {b === null ? "Any" : b === 0 ? "Studio" : `${b}+`}
@@ -547,10 +641,10 @@ export default function MainApp() {
             </div>
           </div>
 
-          <div style={{ height: 1, background: "#E8E0D5" }} />
+          <div style={{ height: 1, background: "var(--border)" }} />
 
           <div>
-            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#9CA3AF" }}>Max Rent (KES)</div>
+            <div className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--text-faint)" }}>Max Rent (KES)</div>
             <div className="flex flex-col gap-1.5">
               {[null, 20000, 40000, 60000, 100000, 200000].map((r) => (
                 <button
@@ -558,8 +652,8 @@ export default function MainApp() {
                   onClick={() => setFilter("maxRent", r)}
                   className="px-3 py-2 rounded-lg text-sm font-medium text-left transition-all"
                   style={{
-                    background: filters.maxRent === r ? "#FBF0EC" : "transparent",
-                    color: filters.maxRent === r ? "#B84520" : "#4B5563",
+                    background: filters.maxRent === r ? "var(--bg-active)" : "transparent",
+                    color: filters.maxRent === r ? "#B84520" : "var(--text-secondary)",
                   }}
                 >
                   {r === null ? "No limit" : `Under ${formatKES(r)}`}
@@ -568,7 +662,7 @@ export default function MainApp() {
             </div>
           </div>
 
-          <div style={{ height: 1, background: "#E8E0D5" }} />
+          <div style={{ height: 1, background: "var(--border)" }} />
 
           <div className="flex flex-col gap-2">
             {[
@@ -583,7 +677,7 @@ export default function MainApp() {
                   className="rounded"
                   style={{ accentColor: "#B84520" }}
                 />
-                <span className="text-sm" style={{ color: "#4B5563" }}>{label}</span>
+                <span className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</span>
               </label>
             ))}
           </div>
@@ -603,11 +697,11 @@ export default function MainApp() {
         <main className="flex-1 px-4 md:px-6 py-6">
           {/* Mobile filter strip */}
           <div className="flex lg:hidden items-center gap-2 mb-3 flex-wrap">
-            <div className="flex rounded-full overflow-hidden" style={{ border: "1px solid #E8E0D5", background: "#fff" }}>
+            <div className="flex rounded-full overflow-hidden" style={{ border: "1px solid var(--border)", background: "var(--bg-card)" }}>
               {(["All", "rent", "sale"] as const).map((lt) => (
                 <button key={lt} onClick={() => setFilter("listingType", lt)}
                   className="px-3 py-1.5 text-xs font-semibold transition-all"
-                  style={{ background: filters.listingType === lt ? "#B84520" : "transparent", color: filters.listingType === lt ? "#fff" : "#6B7280" }}>
+                  style={{ background: filters.listingType === lt ? "#B84520" : "transparent", color: filters.listingType === lt ? "#fff" : "var(--text-muted)" }}>
                   {lt === "All" ? "All" : lt === "rent" ? "Rent" : "Buy"}
                 </button>
               ))}
@@ -620,9 +714,9 @@ export default function MainApp() {
                 onClick={() => setFilter("city", c)}
                 className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
                 style={{
-                  background: filters.city === c ? "#B84520" : "#fff",
-                  color: filters.city === c ? "#fff" : "#4B5563",
-                  border: "1px solid #E8E0D5",
+                  background: filters.city === c ? "#B84520" : "var(--bg-card)",
+                  color: filters.city === c ? "#fff" : "var(--text-secondary)",
+                  border: "1px solid var(--border)",
                 }}
               >
                 {c}
@@ -633,14 +727,14 @@ export default function MainApp() {
           {/* Results header */}
           <div className="flex items-center justify-between mb-5">
             <div>
-              <span style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", color: "#1A1A1A", fontWeight: 400 }}>
+              <span style={{ fontFamily: "Fraunces, serif", fontSize: "1.1rem", color: "var(--text-primary)", fontWeight: 400 }}>
                 {filtered.length} propert{filtered.length !== 1 ? "ies" : "y"}
               </span>
               {filters.city !== "All" && (
-                <span style={{ color: "#6B7280", fontSize: "0.9rem" }}> in {filters.city}</span>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}> in {filters.city}</span>
               )}
             </div>
-            <div className="flex gap-3 text-xs" style={{ color: "#9CA3AF" }}>
+            <div className="flex gap-3 text-xs" style={{ color: "var(--text-faint)" }}>
               <span>Sorted by: Verified first</span>
             </div>
           </div>
@@ -649,7 +743,7 @@ export default function MainApp() {
           {filtered.length === 0 ? (
             <div className="py-24 text-center">
               <div style={{ fontSize: "3rem" }}>🏘️</div>
-              <div style={{ color: "#6B7280", marginTop: 12, fontFamily: "Outfit, sans-serif" }}>
+              <div style={{ color: "var(--text-muted)", marginTop: 12, fontFamily: "Outfit, sans-serif" }}>
                 No properties match your filters.
               </div>
               <button
@@ -681,8 +775,10 @@ export default function MainApp() {
       )}
 
       {showContact && <ContactUs onClose={() => setShowContact(false)} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onAuth={(u) => { setUser(u); setShowAuth(false) }} />}
       {showStory && <OurStory onClose={() => setShowStory(false)} />}
       {showMarket && <MarketData onClose={() => setShowMarket(false)} />}
+      {showMortgage && <MortgageCalculator onClose={() => setShowMortgage(false)} />}
 
       {/* Mobile sticky contact bar */}
       <div
