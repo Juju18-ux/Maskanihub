@@ -120,4 +120,4 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ## 🙌 Acknowledgements
 
-Built with [Figma Make](https://figma.com) and deployed on [Firebase](https://firebase.google.com).
+Deployed on [Firebase](https://firebase.google.com).
